@@ -1,62 +1,91 @@
 <?php
+
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\Stock;
-use App\Models\Zone;
-use App\Models\StockTransfer;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use App\Models\Book;
+use App\Models\Zone;
 use App\Models\SousZone;
+use App\Models\SousSousZone;
+use App\Models\Stock;
 
 class MagasinageController extends Controller
 {
-public function index(Request $request)
-{
-    $stocks = Stock::with(['book', 'zone', 'sousZone', 'sousSousZone'])->orderBy('zone_id')->orderBy('book_id')->get();
-    $books = Book::orderBy('title')->get();
-    $zones = Zone::orderBy('name')->get();
-    $sousZones = SousZone::orderBy('name')->get(); // if needed
-    $sousSousZones = SousSousZone::orderBy('name')->get(); // if needed
+    public function index()
+    {
+        $books = Book::where('is_active', true)->orderBy('title')->get();
+        $zones = Zone::orderBy('name')->get();
+        $sousZones = SousZone::orderBy('name')->get();
+        $sousSousZones = SousSousZone::orderBy('name')->get();
 
-    return view('admin.magasinage', compact('stocks', 'books', 'zones', 'sousZones', 'sousSousZones'));
-}
+        // Prepare zoneStocks for table: [zone => [book stocks in this zone]]
+        $zoneStocks = [];
+        foreach ($zones as $zone) {
+            $stocks = Stock::with('book')
+                ->where('zone_id', $zone->id)
+                ->where('location_type', 'magasinage')
+                ->get();
+            $zoneStocks[] = [
+                'zone'  => $zone,
+                'books' => $stocks,
+            ];
+        }
 
+        return view('admin.magasinage.index', compact('books', 'zones', 'sousZones', 'sousSousZones', 'zoneStocks'));
+    }
 
+    // Stock add
+    public function store(Request $request)
+    {
+        $request->validate([
+            'book_id'          => 'required|exists:books,id',
+            'zone_id'          => 'required|exists:zones,id',
+            'quantity'         => 'required|integer|min:1',
+            'sous_zone_id'     => 'nullable|exists:sous_zones,id',
+            'sous_sous_zone_id'=> 'nullable|exists:sous_sous_zones,id',
+        ]);
+        Stock::create([
+            'book_id'          => $request->book_id,
+            'zone_id'          => $request->zone_id,
+            'sous_zone_id'     => $request->sous_zone_id,
+            'sous_sous_zone_id'=> $request->sous_sous_zone_id,
+            'quantity'         => $request->quantity,
+            'location_type'    => 'magasinage',
+        ]);
+        return back()->with('success', 'Stock ajouté.');
+    }
 
+    // Stock transfer
     public function transfer(Request $request)
     {
         $request->validate([
-            'book_id' => 'required|exists:books,id',
+            'book_id'      => 'required|exists:books,id',
             'from_zone_id' => 'required|exists:zones,id',
-            'to_zone_id' => 'required|exists:zones,id|different:from_zone_id',
-            'quantity' => 'required|integer|min:1'
+            'to_zone_id'   => 'required|exists:zones,id|different:from_zone_id',
+            'quantity'     => 'required|integer|min:1',
         ]);
-        DB::transaction(function () use ($request) {
-            $stockFrom = Stock::where('book_id', $request->book_id)
-                              ->where('zone_id', $request->from_zone_id)->lockForUpdate()->firstOrFail();
-            if ($stockFrom->quantity < $request->quantity) {
-                abort(400, "Stock insuffisant pour le transfert");
-            }
-            $stockFrom->quantity -= $request->quantity;
-            $stockFrom->save();
+        // Reduce stock from origin
+        $stock = Stock::where([
+            'book_id' => $request->book_id,
+            'zone_id' => $request->from_zone_id,
+            'location_type' => 'magasinage'
+        ])->first();
+        if (!$stock || $stock->quantity < $request->quantity) {
+            return back()->with('error', 'Stock insuffisant.');
+        }
+        $stock->quantity -= $request->quantity;
+        $stock->save();
 
-            $stockTo = Stock::firstOrCreate([
-                'book_id' => $request->book_id,
-                'zone_id' => $request->to_zone_id,
-            ]);
-            $stockTo->quantity += $request->quantity;
-            $stockTo->save();
+        // Add stock to destination (or create new entry)
+        $toStock = Stock::firstOrNew([
+            'book_id' => $request->book_id,
+            'zone_id' => $request->to_zone_id,
+            'location_type' => 'magasinage'
+        ]);
+        $toStock->quantity = ($toStock->quantity ?? 0) + $request->quantity;
+        $toStock->save();
 
-            StockTransfer::create([
-                'book_id' => $request->book_id,
-                'from_zone_id' => $request->from_zone_id,
-                'to_zone_id' => $request->to_zone_id,
-                'quantity' => $request->quantity,
-                'user_id' => auth()->id(),
-            ]);
-        });
-        return redirect()->route('admin.magasinage.index')->with('success', 'Transfert effectué avec succès.');
+        return back()->with('success', 'Stock transféré.');
     }
 }
