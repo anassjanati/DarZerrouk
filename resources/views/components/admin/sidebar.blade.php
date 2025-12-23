@@ -1,111 +1,252 @@
-<div class="w-64 bg-white shadow-lg min-h-screen">
-    <nav class="p-4">
-        <div class="space-y-2">
-            <!-- Dashboard -->
-            <a href="{{ route('admin.dashboard') }}" 
-               class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gray-100 transition {{ request()->routeIs('admin.dashboard') ? 'bg-teal-50 text-teal-600 font-semibold' : 'text-gray-700' }}">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
-                </svg>
-                <span>Tableau de bord</span>
-            </a>
+{{-- Sidebar collapsible --}}
+<aside x-data="{ open: true }"
+       :class="open ? 'w-60 lg:w-64' : 'w-16'"
+       class="hidden md:flex flex-col min-h-screen flex-shrink-0 transition-all duration-300 ease-in-out
+              [background:linear-gradient(90deg,rgba(151,247,229,1)_0%,rgba(174,195,205,1)_50%,rgba(230,232,237,1)_100%)]
+              shadow-[0_0_40px_rgba(15,23,42,0.18)]">
 
-            <!-- Users Management -->
-            <a href="{{ route('admin.users.index') }}" 
-               class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gray-100 transition {{ request()->routeIs('admin.users.*') ? 'bg-teal-50 text-teal-600 font-semibold' : 'text-gray-700' }}">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
-                </svg>
-                <span>Utilisateurs</span>
-            </a>
-
-            <!-- Divider -->
-            <div class="border-t my-4"></div>
-
-            <!-- POS (if user is cashier/manager) -->
-            @if(auth()->user()->isCashier() || auth()->user()->isManager())
-            <a href="{{ route('pos.index') }}" 
-               class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gray-100 transition text-gray-700">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path>
-                </svg>
-                <span>Point de vente</span>
-            </a>
-            @endif
-
-            
-
-            <!-- Reports (placeholder for future)
-            <a href="#" class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gray-100 transition text-gray-400 cursor-not-allowed">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                </svg>
-                <span>Rapports</span>
-                <span class="ml-auto text-xs bg-gray-200 px-2 py-1 rounded">Bientôt</span>
-            </a> -->
-
-            <!-- Settings (placeholder for future)
-            <a href="#" class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gray-100 transition text-gray-400 cursor-not-allowed">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                </svg>
-                <span>Paramètres</span>
-                <span class="ml-auto text-xs bg-gray-200 px-2 py-1 rounded">Bientôt</span>
-            </a> -->
-            <!-- Activity Logs -->
-            
-            <!-- BOOKS MANAGEMENT SECTION -->
-            <div class="mb-2">
-                <p class="px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Gestion des livres</p>
-            </div>
-            <a href="{{ route('admin.zones.overview') }}"
-   class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors {{ request()->routeIs('admin.zones.overview') ? 'bg-teal-100 text-teal-700' : 'text-gray-700 hover:bg-gray-100' }}">
-    
-    <span class="font-medium">Zones & Emplacement</span>
-</a>
-
-
-<li>
-    <a href="{{ route('admin.magasinage.index') }}" class="flex items-center px-4 py-2 text-gray-700 hover:bg-teal-50 hover:text-teal-900 rounded transition-all">
-        <span class="material-icons mr-2"></span>
-        Magasinage
-    </a>
-</li>
-
-
-            <!-- Books (THIS IS THE IMPORTANT LINK) -->
-            <a href="{{ route('admin.books.manage') }}" 
-               class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gray-100 transition {{ request()->routeIs('admin.books.manage') ? 'bg-teal-50 text-teal-600 font-semibold' : 'text-gray-700' }}">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
-                </svg>
-                <span>Livres</span>
-                <a href="{{ route('admin.activity-logs.index') }}" 
-            class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gray-100 transition {{ request()->routeIs('admin.activity-logs.*') ? 'bg-teal-50 text-teal-600 font-semibold' : 'text-gray-700' }}">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                </svg>
-                <span>Journal d'activité</span>
-            </a>
-                <!-- Stock Alerts Link -->
-<a href="{{ route('admin.books.stock-alerts') }}" 
-   class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors {{ request()->routeIs('admin.books.stock-alerts') ? 'bg-teal-100 text-teal-700' : 'text-gray-700 hover:bg-gray-100' }}">
-    <span class="text-2xl">📦</span>
-    <div class="flex-1">
-        <span class="font-medium">Alertes Stock</span>
-        @php
-            $alertCount = \App\Models\Book::outOfStock()->count() + \App\Models\Book::lowStock()->count();
-        @endphp
-        @if($alertCount > 0)
-            <span class="ml-2 bg-red-500 text-white text-xs px-2 py-0.5 rounded-full font-bold">
-                {{ $alertCount }}
-            </span>
-        @endif
+    {{-- Top: toggle --}}
+    <div class="flex items-center justify-end px-2 pt-3 pb-2">
+        <button @click="open = !open"
+                class="h-8 w-8 flex items-center justify-center rounded-full bg-sky-600 text-white hover:bg-sky-700 text-xs">
+            <svg x-show="open" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+            </svg>
+            <svg x-show="!open" x-cloak class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+            </svg>
+        </button>
     </div>
-</a>
 
+    <nav class="flex-1 px-2 pb-4 space-y-5 text-xs">
+        {{-- Principal --}}
+        <div class="space-y-1">
+            <p class="px-3 text-[10px] font-semibold uppercase tracking-wide text-slate-600"
+               x-show="open" x-transition>
+                Principal
+            </p>
+
+            {{-- Dashboard --}}
+            <a href="{{ route('admin.dashboard') }}"
+               class="flex items-center gap-3 px-3 py-2 rounded-2xl cursor-pointer transition-colors duration-150
+                      {{ request()->routeIs('admin.dashboard')
+                          ? 'bg-sky-600 text-white shadow-md'
+                          : 'text-slate-800 hover:bg-white/60 hover:text-sky-700' }}">
+                <span class="inline-flex h-7 w-7 items-center justify-center rounded-xl
+                             {{ request()->routeIs('admin.dashboard') ? 'bg-white/20' : 'bg-white/80' }}">
+                    <svg class="w-4 h-4 {{ request()->routeIs('admin.dashboard') ? 'text-white' : 'text-sky-600' }}"
+                         fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+                    </svg>
+                </span>
+                <span x-show="open" x-transition>Tableau de bord</span>
+            </a>
+
+            {{-- Utilisateurs --}}
+            <a href="{{ route('admin.users.index') }}"
+               class="flex items-center gap-3 px-3 py-2 rounded-2xl cursor-pointer transition-colors duration-150
+                      {{ request()->routeIs('admin.users.*')
+                          ? 'bg-sky-600 text-white shadow-md'
+                          : 'text-slate-800 hover:bg-white/60 hover:text-sky-700' }}">
+                <span class="inline-flex h-7 w-7 items-center justify-center rounded-xl
+                             {{ request()->routeIs('admin.users.*') ? 'bg-white/20' : 'bg-white/80' }}">
+                    <svg class="w-4 h-4 {{ request()->routeIs('admin.users.*') ? 'text-white' : 'text-sky-600' }}"
+                         fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M12 4.5a3.5 3.5 0 110 7 3.5 3.5 0 010-7zM6 18.75a6 6 0 1112 0V20H6v-1.25z"/>
+                    </svg>
+                </span>
+                <span x-show="open" x-transition>Utilisateurs</span>
+            </a>
+
+            {{-- POS – interface de caisse (pour rôles autorisés) --}}
+            @if(auth()->user()->isCashier() || auth()->user()->isManager() || auth()->user()->isAdmin())
+                <a href="{{ route('pos.index') }}"
+                   class="flex items-center gap-3 px-3 py-2 rounded-2xl cursor-pointer transition-colors duration-150
+                          {{ request()->routeIs('pos.*')
+                              ? 'bg-sky-600 text-white shadow-md'
+                              : 'text-slate-800 hover:bg-white/60 hover:text-sky-700' }}">
+                    <span class="inline-flex h-7 w-7 items-center justify-center rounded-xl
+                                 {{ request()->routeIs('pos.*') ? 'bg-white/20' : 'bg-white/80' }}">
+                        <svg class="w-4 h-4 {{ request()->routeIs('pos.*') ? 'text-white' : 'text-sky-600' }}"
+                             fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                  d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.3 2.3a1 1 0 00.7 1.7H17m0 0a2 2 0 100 4 2 2 0 000-4m-8 2a2 2 0 11-4 0 2 2 0 014 0"/>
+                        </svg>
+                    </span>
+                    <span x-show="open" x-transition>Point de vente</span>
+                </a>
+            @endif
+        </div>
+
+        {{-- Gestion / Stock / POS dashboard --}}
+        <div class="space-y-1">
+            <p class="px-3 text-[10px] font-semibold uppercase tracking-wide text-slate-600"
+               x-show="open" x-transition>
+                Gestion des livres & POS
+            </p>
+
+                        {{-- Clients --}}
+            <a href="{{ route('admin.clients.index') }}"
+               class="flex items-center gap-3 px-3 py-2 rounded-2xl cursor-pointer transition-colors duration-150
+                      {{ request()->routeIs('admin.clients.*')
+                          ? 'bg-sky-600 text-white shadow-md'
+                          : 'text-slate-800 hover:bg-white/60 hover:text-sky-700' }}">
+                <span class="inline-flex h-7 w-7 items-center justify-center rounded-xl
+                             {{ request()->routeIs('admin.clients.*') ? 'bg-white/20' : 'bg-white/80' }}">
+                    <svg class="w-4 h-4 {{ request()->routeIs('admin.clients.*') ? 'text-white' : 'text-sky-600' }}"
+                         fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M17 20v-2a4 4 0 00-4-4H7a4 4 0 00-4 4v2M13 7a3 3 0 11-6 0 3 3 0 016 0zm4 3a2 2 0 11-4 0 2 2 0 014 0z"/>
+                    </svg>
+                </span>
+                <span x-show="open" x-transition>Clients</span>
+            </a>
+
+                        {{-- Fournisseurs --}}
+            <a href="{{ route('admin.suppliers.index') }}"
+               class="flex items-center gap-3 px-3 py-2 rounded-2xl cursor-pointer transition-colors duration-150
+                      {{ request()->routeIs('admin.suppliers.*')
+                          ? 'bg-sky-600 text-white shadow-md'
+                          : 'text-slate-800 hover:bg-white/60 hover:text-sky-700' }}">
+                <span class="inline-flex h-7 w-7 items-center justify-center rounded-xl
+                             {{ request()->routeIs('admin.suppliers.*') ? 'bg-white/20' : 'bg-white/80' }}">
+                    <svg class="w-4 h-4 {{ request()->routeIs('admin.suppliers.*') ? 'text-white' : 'text-sky-600' }}"
+                         fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M16 11c1.657 0 3-1.567 3-3.5S17.657 4 16 4s-3 1.567-3 3.5 1.343 3.5 3 3.5zM8 11c1.657 0 3-1.567 3-3.5S9.657 4 8 4 5 5.567 5 7.5 6.343 11 8 11zm0 2c-2.33 0-7 1.167-7 3.5V19a1 1 0 001 1h6.5M16 13c2.33 0 7 1.167 7 3.5V19a1 1 0 01-1 1h-6.5"/>
+                    </svg>
+                </span>
+                <span x-show="open" x-transition class="font-medium">Fournisseurs</span>
+            </a>
+
+
+            {{-- POS – tableau de bord admin --}}
+            <a href="{{ route('admin.pos.dashboard') }}"
+               class="flex items-center gap-3 px-3 py-2 rounded-2xl cursor-pointer transition-colors duration-150
+                      {{ request()->routeIs('admin.pos.dashboard')
+                          ? 'bg-sky-600 text-white shadow-md'
+                          : 'text-slate-800 hover:bg-white/60 hover:text-sky-700' }}">
+                <span class="inline-flex h-7 w-7 items-center justify-center rounded-xl
+                             {{ request()->routeIs('admin.pos.dashboard') ? 'bg-white/20' : 'bg-white/80' }}">
+                    <svg class="w-4 h-4 {{ request()->routeIs('admin.pos.dashboard') ? 'text-white' : 'text-sky-600' }}"
+                         fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M4 6h16M4 10h16M4 14h10M4 18h10M18 14h2M18 18h2"/>
+                    </svg>
+                </span>
+                <span x-show="open" x-transition class="font-medium">POS – Statistiques</span>
+            </a>
+
+            {{-- Magasinage --}}
+            <a href="{{ route('admin.magasinage.index') }}"
+               class="flex items-center gap-3 px-3 py-2 rounded-2xl cursor-pointer transition-colors duration-150
+                      {{ request()->routeIs('admin.magasinage.*')
+                          ? 'bg-sky-600 text-white shadow-md'
+                          : 'text-slate-800 hover:bg-white/60 hover:text-sky-700' }}">
+                <span class="inline-flex h-7 w-7 items-center justify-center rounded-xl
+                             {{ request()->routeIs('admin.magasinage.*') ? 'bg-white/20' : 'bg-white/80' }}">
+                    <span class="text-[11px] font-semibold {{ request()->routeIs('admin.magasinage.*') ? 'text-white' : 'text-sky-700' }}">
+                        M
+                    </span>
+                </span>
+                <span x-show="open" x-transition class="font-medium">Magasinage</span>
+            </a>
+
+            {{-- Livres --}}
+            <a href="{{ route('admin.books.manage') }}"
+               class="flex items-center gap-3 px-3 py-2 rounded-2xl cursor-pointer transition-colors duration-150
+                      {{ request()->routeIs('admin.books.manage')
+                          ? 'bg-sky-600 text-white shadow-md'
+                          : 'text-slate-800 hover:bg-white/60 hover:text-sky-700' }}">
+                <span class="inline-flex h-7 w-7 items-center justify-center rounded-xl
+                             {{ request()->routeIs('admin.books.manage') ? 'bg-white/20' : 'bg-white/80' }}">
+                    <svg class="w-4 h-4 {{ request()->routeIs('admin.books.manage') ? 'text-white' : 'text-sky-600' }}"
+                         fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M12 6.25v13m0-13C10.8 5.5 9.25 5 7.5 5S4.17 5.5 3 6.25v13C4.17 18.5 5.75 18 7.5 18s3.3.5 4.5 1.25m0-13C13.2 5.5 14.75 5 16.5 5s3.33.5 4.5 1.25v13C19.83 18.5 18.25 18 16.5 18s-3.3.5-4.5 1.25"/>
+                    </svg>
+                </span>
+                <span x-show="open" x-transition>Livres</span>
+            </a>
+
+            {{-- Alertes Stock --}}
+            <a href="{{ route('admin.books.stock-alerts') }}"
+               class="flex items-center gap-3 px-3 py-2 rounded-2xl cursor-pointer transition-colors duration-150
+                      {{ request()->routeIs('admin.books.stock-alerts')
+                          ? 'bg-sky-600 text-white shadow-md'
+                          : 'text-slate-800 hover:bg-white/60 hover:text-sky-700' }}">
+                <span class="inline-flex h-7 w-7 items-center justify-center rounded-xl
+                             {{ request()->routeIs('admin.books.stock-alerts') ? 'bg-white/20' : 'bg-white/80' }}">
+                    <span class="{{ request()->routeIs('admin.books.stock-alerts') ? 'text-white' : 'text-sky-600' }}">
+                        📦
+                    </span>
+                </span>
+                <div class="flex-1 flex items-center justify-between gap-1">
+                    <span x-show="open" x-transition class="font-medium">Alertes Stock</span>
+                    @php
+                        $alertCount = \App\Models\Book::outOfStock()->count() + \App\Models\Book::lowStock()->count();
+                    @endphp
+                    @if($alertCount > 0)
+                        <span x-show="open" x-transition
+                              class="ml-1 bg-red-500 text-white text-[10px] px-2 py-0.5 rounded-full font-bold">
+                            {{ $alertCount }}
+                        </span>
+                    @endif
+                </div>
+            </a>
+
+            {{-- Transferts de Stock --}}
+            <a href="{{ route('admin.stocks.transfer') }}"
+               class="flex items-center gap-3 px-3 py-2 rounded-2xl cursor-pointer transition-colors duration-150
+                      {{ request()->routeIs('admin.stocks.transfer')
+                          ? 'bg-sky-600 text-white shadow-md'
+                          : 'text-slate-800 hover:bg-white/60 hover:text-sky-700' }}">
+                <span class="inline-flex h-7 w-7 items-center justify-center rounded-xl
+                             {{ request()->routeIs('admin.stocks.transfer') ? 'bg-white/20' : 'bg-white/80' }}">
+                    <svg class="w-4 h-4 {{ request()->routeIs('admin.stocks.transfer') ? 'text-white' : 'text-sky-600' }}"
+                         fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"/>
+                    </svg>
+                </span>
+                <span x-show="open" x-transition class="font-medium">Transferts de Stock</span>
+            </a>
+
+            {{-- Bons de Commande --}}
+            <a href="{{ route('admin.bon_de_commande.index') }}"
+               class="flex items-center gap-3 px-3 py-2 rounded-2xl cursor-pointer transition-colors duration-150
+                      {{ request()->routeIs('admin.bon_de_commande.*')
+                          ? 'bg-sky-600 text-white shadow-md'
+                          : 'text-slate-800 hover:bg-white/60 hover:text-sky-700' }}">
+                <span class="inline-flex h-7 w-7 items-center justify-center rounded-xl
+                             {{ request()->routeIs('admin.bon_de_commande.*') ? 'bg-white/20' : 'bg-white/80' }}">
+                    <svg class="w-4 h-4 {{ request()->routeIs('admin.bon_de_commande.*') ? 'text-white' : 'text-sky-600' }}"
+                         fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.6a1 1 0 01.7.3l5.4 5.4a1 1 0 01.3.7V19a2 2 0 01-2 2z"/>
+                    </svg>
+                </span>
+                <span x-show="open" x-transition class="font-medium">Bons de Commande</span>
+            </a>
+
+            {{-- Journal d'activité --}}
+            <a href="{{ route('admin.activity-logs.index') }}"
+               class="flex items-center gap-3 px-3 py-2 rounded-2xl cursor-pointer transition-colors duration-150
+                      {{ request()->routeIs('admin.activity-logs.*')
+                          ? 'bg-sky-600 text-white shadow-md'
+                          : 'text-slate-800 hover:bg-white/60 hover:text-sky-700' }}">
+                <span class="inline-flex h-7 w-7 items-center justify-center rounded-xl
+                             {{ request()->routeIs('admin.activity-logs.*') ? 'bg-white/20' : 'bg-white/80' }}">
+                    <svg class="w-4 h-4 {{ request()->routeIs('admin.activity-logs.*') ? 'text-white' : 'text-sky-600' }}"
+                         fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M9 12h6m-6 4h6M7 5h10a2 2 0 012 2v10a2 2 0 01-2 2H7a2 2 0 01-2-2V7a2 2 0 012-2z"/>
+                    </svg>
+                </span>
+                <span x-show="open" x-transition>Journal d'activité</span>
             </a>
         </div>
     </nav>
-</div>
+</aside>

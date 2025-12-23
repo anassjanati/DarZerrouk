@@ -8,7 +8,7 @@ use App\Imports\BooksImport;
 
 class ImportBooks extends Command
 {
-    protected $signature = 'books:import {file}';
+    protected $signature = 'books:import {file : Path to Excel file}';
     protected $description = 'Import books from Excel file';
 
     public function handle()
@@ -22,9 +22,9 @@ class ImportBooks extends Command
 
         $this->info('Starting import...');
         $this->info('File: ' . $file);
-        
+
         $import = new BooksImport();
-        
+
         Excel::import($import, $file);
 
         $this->info('Import completed!');

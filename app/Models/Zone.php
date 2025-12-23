@@ -10,13 +10,47 @@ class Zone extends Model
     protected $fillable = [
         'name',
         'code',
+        'type',
         'description',
         'is_active',
     ];
 
-    public function books()
-{
-    return $this->hasMany(Book::class);
-}
+    protected $casts = [
+        'is_active' => 'boolean',
+    ];
 
+    public function books(): HasMany
+    {
+        return $this->hasMany(Book::class);
+    }
+
+    public function stocks(): HasMany
+    {
+        return $this->hasMany(Stock::class);
+    }
+
+    public function sousZones(): HasMany
+    {
+        return $this->hasMany(SousZone::class);
+    }
+
+    public function scopeLibrairie($query)
+    {
+        return $query->where('type', 'librairie');
+    }
+
+    public function scopeMagasinage($query)
+    {
+        return $query->where('type', 'magasinage');
+    }
+
+    public function scopeActive($query)
+    {
+        return $query->where('is_active', true);
+    }
+
+    public function getTotalStockAttribute(): int
+    {
+        return (int) $this->stocks()->sum('quantity');
+    }
 }

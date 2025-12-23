@@ -23,12 +23,12 @@ class BookManagementController extends Controller
             $query->where('barcode', $request->barcode);
         } elseif ($request->filled('search')) {
             $term = $request->search;
-            $query->where(function($q) use ($term) {
+            $query->where(function ($q) use ($term) {
                 $q->where('title', 'like', "%{$term}%")
-                  ->orWhereHas('author', fn($a) => $a->where('name', 'like', "%{$term}%"))
-                  ->orWhereHas('translator', fn($t) => $t->where('name', 'like', "%{$term}%"))
-                  ->orWhereHas('publisher', fn($p) => $p->where('name', 'like', "%{$term}%"))
-                  ->orWhereHas('corrector', fn($c) => $c->where('name', 'like', "%{$term}%"));
+                    ->orWhereHas('author', fn($a) => $a->where('name', 'like', "%{$term}%"))
+                    ->orWhereHas('translator', fn($t) => $t->where('name', 'like', "%{$term}%"))
+                    ->orWhereHas('publisher', fn($p) => $p->where('name', 'like', "%{$term}%"))
+                    ->orWhereHas('corrector', fn($c) => $c->where('name', 'like', "%{$term}%"));
             });
         }
 
@@ -37,12 +37,45 @@ class BookManagementController extends Controller
         $sortDir = $request->get('dir', 'asc');
         $query->orderBy($sortBy, $sortDir);
 
-        $books = $query->paginate(50);
+        $books      = $query->paginate(50);
         $categories = Category::orderBy('name')->get();
-        $authors = Author::orderBy('name')->get();
+        $authors    = Author::orderBy('name')->get();
         $publishers = Publisher::orderBy('name')->get();
-        $zones = Zone::orderBy('name')->get();
+        $zones      = Zone::orderBy('name')->get();
 
-        return view('admin.books.manage', compact('books', 'categories', 'authors', 'publishers', 'zones'));
+        $data = compact('books', 'categories', 'authors', 'publishers', 'zones');
+
+        // If the current route is the manager one, use the manager wrapper view
+        if ($request->routeIs('manager.books.manage')) {
+            return view('manager.books.manage', $data);
+        }
+
+        // Default: admin wrapper view
+        return view('admin.books.manage', $data);
     }
+    public function stockAlerts(Request $request)
+{
+    $books = Book::with(['author', 'category'])
+        ->where('is_active', 1)
+        ->whereRaw("
+            COALESCE((SELECT SUM(quantity) FROM stocks WHERE stocks.book_id = books.id), 0)
+                <= IFNULL(books.min_stock_level, books.reorder_level)
+        ")
+        ->paginate(50);
+
+    // mêmes listes que dans index()
+    $categories = Category::orderBy('name')->get();
+    $authors    = Author::orderBy('name')->get();
+    $publishers = Publisher::orderBy('name')->get();
+    $zones      = Zone::orderBy('name')->get();
+
+    return view('admin.books.stock-alerts', compact(
+        'books',
+        'categories',
+        'authors',
+        'publishers',
+        'zones'
+    ));
+}
+
 }

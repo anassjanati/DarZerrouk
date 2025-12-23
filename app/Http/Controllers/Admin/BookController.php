@@ -3,102 +3,145 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\UpdateBookRequest;
+use App\Models\Author;
 use App\Models\Book;
+use App\Models\Category;
+use App\Models\Publisher;
 use Illuminate\Http\Request;
 
 class BookController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Book::with([
-            'author', 'category', 'publisher', 'translator', 'corrector',
-            'stocks.zone', 'stocks.sousZone', 'stocks.sousSousZone'
-        ]);
+        $query = Book::withoutGlobalScope('active')
+            ->with([
+                'author', 'category', 'publisher',
+                'stocks.zone', 'stocks.sousZone', 'stocks.sousSousZone',
+            ]);
 
-        if ($request->filled('barcode') && is_numeric($request->barcode)) {
-            $query->where('barcode', $request->barcode);
+        if ($request->filled('barcode')) {
+            $barcode = trim($request->barcode);
+            $query->where('barcode', 'like', '%' . $barcode . '%');
         } elseif ($request->filled('search')) {
-            $term = $request->search;
-            $query->where(function($q) use ($term) {
+            $term = trim($request->search);
+
+            $query->where(function ($q) use ($term) {
                 $q->where('title', 'like', "%{$term}%")
-                  ->orWhereHas('author', fn($a) => $a->where('name', 'like', "%{$term}%"))
-                  ->orWhereHas('translator', fn($t) => $t->where('name', 'like', "%{$term}%"))
-                  ->orWhereHas('publisher', fn($p) => $p->where('name', 'like', "%{$term}%"))
-                  ->orWhereHas('corrector', fn($c) => $c->where('name', 'like', "%{$term}%"));
+                    ->orWhere('title_ar', 'like', "%{$term}%")
+                    ->orWhere('barcode', 'like', "%{$term}%")
+                    ->orWhereHas('author', function ($a) use ($term) {
+                        $a->where('name', 'like', "%{$term}%");
+                    })
+                    ->orWhereHas('publisher', function ($p) use ($term) {
+                        $p->where('name', 'like', "%{$term}%");
+                    });
             });
         }
 
-        $books = $query->paginate(50);
+        $books = $query
+            ->orderBy('title')
+            ->paginate(50)
+            ->withQueryString();
+
         return view('admin.books.index', compact('books'));
     }
 
     public function show(Book $book)
     {
         $book->load([
-            'author', 'category', 'publisher', 'stocks.zone', 'stocks.sousZone', 'stocks.sousSousZone'
+            'author', 'category', 'publisher',
+            'stocks.zone', 'stocks.sousZone', 'stocks.sousSousZone',
         ]);
+
         return view('admin.books.show', compact('book'));
     }
 
     public function archive(Book $book)
-{
-    $book->is_active = false;
-    $book->save();
-    return redirect()->route('admin.books.archiveList')->with('success', 'Livre archivé.');
-}
+    {
+        $book->is_active = false;
+        $book->save();
 
-public function unarchive(Book $book)
-{
-    $book->is_active = true;
-    $book->save();
-    return redirect()->route('admin.books.manage')->with('success', 'Livre désarchivé et activé.');
-}
+        return redirect()
+            ->route('admin.books.archiveList')
+            ->with('success', 'Livre archivé.');
+    }
 
-// Archive listing page
-public function archiveList(Request $request)
-{
-    $books = Book::where('is_active', false)->with([
-        'author', 'category', 'publisher'
-    ])->paginate(50);
-    return view('admin.books.archive', compact('books'));
-}
+    public function unarchive(Book $book)
+    {
+        $book->is_active = true;
+        $book->save();
 
+        return redirect()
+            ->route('admin.books.manage')
+            ->with('success', 'Livre désarchivé et activé.');
+    }
+
+    public function archiveList(Request $request)
+    {
+        $books = Book::withoutGlobalScope('active')
+            ->where('is_active', false)
+            ->with(['author', 'category', 'publisher'])
+            ->orderBy('title')
+            ->paginate(50)
+            ->withQueryString();
+
+        return view('admin.books.archive', compact('books'));
+    }
 
     public function destroy(Book $book)
     {
         $book->delete();
-        return redirect()->back()->with('success', 'Livre supprimé.');
+
+        return redirect()
+            ->back()
+            ->with('success', 'Livre supprimé.');
     }
 
+    /**
+     * Formulaire d’édition (contrôlé par permissions module "books").
+     */
     public function edit(Book $book)
     {
+        $user = auth()->user();
+
+        \Log::info('books.edit check', [
+            'user_id' => $user?->id,
+            'can'     => $user?->canModule('books', 'edit'),
+        ]);
+
+        if (! $user || ! $user->canModule('books', 'edit')) {
+            abort(403);
+        }
+
         $book->load(['author', 'category', 'publisher']);
-        $authors    = \App\Models\Author::orderBy('name')->get();
-        $categories = \App\Models\Category::orderBy('name')->get();
-        $publishers = \App\Models\Publisher::orderBy('name')->get();
+
+        $authors    = Author::orderBy('name')->get(['id', 'name']);
+        $categories = Category::orderBy('name')->get(['id', 'name']);
+        $publishers = Publisher::orderBy('name')->get(['id', 'name']);
+
         return view('admin.books.edit', compact('book', 'authors', 'categories', 'publishers'));
     }
 
-    public function update(Request $request, Book $book)
+    /**
+     * Mise à jour du livre (formulaire backoffice).
+     */
+    public function update(UpdateBookRequest $request, Book $book)
     {
-        $request->validate([
-            'barcode'         => 'required|max:255|unique:books,barcode,'.$book->id,
-            'title'           => 'required|max:255',
-            'author_id'       => 'nullable|exists:authors,id',
-            'category_id'     => 'nullable|exists:categories,id',
-            'publisher_id'    => 'nullable|exists:publishers,id',
-            'price_1'         => 'nullable|numeric',
-            'price_2'         => 'nullable|numeric',
-            'wholesale_price' => 'nullable|numeric',
-            'cost_price'      => 'nullable|numeric',
-        ]);
+        $user = auth()->user();
 
-        $book->update($request->only([
-            'barcode', 'title', 'author_id', 'category_id', 'publisher_id',
-            'price_1', 'price_2', 'wholesale_price', 'cost_price'
-        ]));
+        if (! $user || ! $user->canModule('books', 'edit')) {
+            abort(403);
+        }
 
-        return redirect()->route('admin.books.edit', $book->id)
+        $validated = $request->validated();
+
+        \Log::info('Book Update Validated Data (form):', $validated);
+
+        $book->update($validated);
+
+        return redirect()
+            ->route('admin.books.manage')
             ->with('success', 'Livre mis à jour avec succès.');
     }
 }

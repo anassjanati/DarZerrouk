@@ -2,123 +2,111 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>Bon de Commande Nº {{ $bon_de_commande->ref }}</title>
+    <title>Bon de Commande {{ $bon_de_commande->ref }}</title>
     <style>
-        body { font-family: Arial, sans-serif; margin:30px;}
-        h2 { font-size:24px; font-weight:700; color:#666;}
-        table { width:100%; border-collapse:collapse; margin-top:18px;}
-        th, td { border:1px solid #bbb; padding:8px; font-size:14px;}
-        th { background:#f4f4f4;}
-        .headerlogo { height:64px; }
-        .company, .demandeur { margin-bottom:14px; }
-        .total-table td { font-weight:600; }
-        .infos-table th, .infos-table td { font-size:13px;}
-        .notes {font-size: 13px; margin-top:18px;}
+        * { margin: 0; padding: 0; }
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .container { max-width: 900px; margin: 0 auto; }
+        h1 { font-size: 28px; margin-bottom: 5px; }
+        .header { margin-bottom: 30px; border-bottom: 2px solid #333; padding-bottom: 15px; }
+        .info-row { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 14px; }
+        .info-label { font-weight: bold; width: 150px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th { background: #f0f0f0; padding: 10px; text-align: left; font-weight: bold; border: 1px solid #ddd; }
+        td { padding: 10px; border: 1px solid #ddd; }
+        .total-section { margin-top: 30px; }
+        .total-row { display: flex; justify-content: flex-end; margin-bottom: 10px; font-size: 14px; }
+        .total-label { width: 200px; font-weight: bold; }
+        .total-value { width: 100px; text-align: right; }
+        .grand-total { font-size: 18px; font-weight: bold; border-top: 2px solid #333; padding-top: 10px; }
+        .footer { margin-top: 40px; font-size: 12px; border-top: 1px solid #ddd; padding-top: 15px; }
+        @media print { body { padding: 0; } }
     </style>
 </head>
 <body onload="window.print()">
-    <!-- Logo and document title -->
-    <table style="width:100%; border:none; margin-bottom:24px;">
-        <tr>
-            <td style="width:80px;">
-                {{-- If you have a logo URL, use it here --}}
-                <img src="{{ asset('images/dz.png') }}" alt="Logo" class="headerlogo">
-            </td>
-            <td style="text-align:right;">
-                <span style="font-size:24px; font-weight:600;">BON DE COMMANDE</span>
-            </td>
-        </tr>
-    </table>
+    @php
+    $isAdmin = auth()->user() && auth()->user()->isAdmin();
+@endphp
+    <div class="container">
+        <div class="header">
+            <h1>BON DE COMMANDE</h1>
+            <p>Ref: {{ $bon_de_commande->ref }} | Date: {{ $bon_de_commande->date }}</p>
+        </div>
 
-    <div class="company">
-        <b>{{ config('app.name') }}</b><br>
-        {{-- Adapt company info from your config or user/supplier --}}
-        {{ $settings->address ?? 'Adresse société' }}<br>
-        Téléphone: {{ $settings->phone ?? '------' }}
-    </div>
+        <div class="info-row">
+            <div>
+                <div class="info-label">Fournisseur:</div>
+                <p>{{ $bon_de_commande->supplier->name }}</p>
+                <p>{{ $bon_de_commande->supplier->address ?? '' }}</p>
+            </div>
+            <div style="text-align: right;">
+                <div class="info-label">Créé par:</div>
+                <p>{{ $bon_de_commande->user->name }}</p>
+                <p style="font-size: 12px;">{{ $bon_de_commande->created_at->format('d/m/Y H:i') }}</p>
+            </div>
+        </div>
 
-    <div class="demandeur">
-        <b>À :</b> {{ $bon_de_commande->demandeur ?? $bon_de_commande->supplier->name ?? '' }}<br>
-        {{ $bon_de_commande->supplier->address ?? '' }}
-    </div>
+        <p style="margin: 20px 0; color: #666;">
+            <strong>Statut:</strong> 
+            @if($bon_de_commande->status === 'pending')
+                En attente de validation
+            @else
+                Validé
+            @endif
+        </p>
 
-    <table class="infos-table" style="margin-bottom:6px;">
-        <tr>
-            <th style="width:170px;">DATE DU BON DE COMMANDE</th>
-            <th>DEMANDEUR</th>
-            <th>EXPÉDIÉ PAR</th>
-            <th>FRANCO DÉPART</th>
-            <th>CONDITIONS</th>
-        </tr>
-        <tr>
-            <td>{{ $bon_de_commande->date }}</td>
-            <td>{{ $bon_de_commande->demandeur ?? $bon_de_commande->supplier->name ?? '' }}</td>
-            <td>{{ $bon_de_commande->user->name ?? '' }}</td>
-            <td></td>
-            <td></td>
-        </tr>
-    </table>
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 50%;">Livre</th>
+                    <th style="width: 15%; text-align: center;">Quantité</th>
+                    <th style="width: 15%; text-align: right;">Prix de Vente</th>
+                    <th style="width: 20%; text-align: right;">Sous-total</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach($bon_de_commande->lines as $line)
+                <tr>
+                    <td>
+                        <strong>{{ $line->book->title }}</strong><br>
+                        <span style="font-size: 12px; color: #666;">{{ $line->book->barcode }}</span>
+                    </td>
+                    <td style="text-align: center;">{{ $line->quantity }}</td>
+                    <td style="text-align: right;">{{ number_format($line->selling_price, 2) }} DH</td>
+                    <td style="text-align: right;">{{ number_format($line->selling_price * $line->quantity, 2) }} DH</td>
+                </tr>
+                @endforeach
+            </tbody>
+        </table>
 
-    <table>
-        <thead>
-            <tr>
-                <th>QTÉ</th>
-                <th>UNITÉ</th>
-                <th>DESCRIPTION</th>
-                <th>PRIX UNITAIRE</th>
-                <th>TOTAL</th>
-            </tr>
-        </thead>
-        <tbody>
-            @php $total = 0; @endphp
-            @foreach($bon_de_commande->lines as $line)
-            @php $line_total = $line->quantity * $line->cost_price; $total += $line_total; @endphp
-            <tr>
-                <td>{{ $line->quantity }}</td>
-                <td>Unité</td>
-                <td>{{ $line->book->title }}</td>
-                <td>{{ number_format($line->cost_price, 2) }}</td>
-                <td>{{ number_format($line_total, 2) }}</td>
-            </tr>
-            @endforeach
-        </tbody>
-    </table>
+        <div class="total-section">
+            <div class="total-row">
+                <div class="total-label">Total Quantité:</div>
+                <div class="total-value">{{ $bon_de_commande->lines->sum('quantity') }}</div>
+            </div>
+            <div class="total-row">
+                <div class="total-label">Total Prix de Vente:</div>
+                <div class="total-value">{{ number_format($bon_de_commande->lines->sum(fn($l) => $l->selling_price * $l->quantity), 2) }} DH</div>
+            </div>
+            
+            @if($bon_de_commande->status === 'validated' && $isAdmin)
+            <div class="total-row" style="border-top: 1px solid #ddd; padding-top: 10px; margin-top: 10px;">
+                <div class="total-label">Total Prix d'Achat:</div>
+                <div class="total-value grand-total">{{ number_format($bon_de_commande->lines->sum(fn($l) => $l->cost_price * $l->quantity), 2) }} DH</div>
+            </div>
+            @endif
+        </div>
 
-    <table style="width:310px; float:right; margin-top:10px;" class="total-table">
-        <tr>
-            <td>Sous-total</td>
-            <td style="text-align:right;">{{ number_format($total,2) }}</td>
-        </tr>
-        <tr>
-            <td>TVA</td>
-            <td style="text-align:right;">{{ number_format($total*0.2,2) }}</td>
-        </tr>
-        <tr>
-            <td>Port & manutention</td>
-            <td style="text-align:right;">{{ number_format(0,2) }}</td>
-        </tr>
-        <tr>
-            <td>Autre</td>
-            <td style="text-align:right;">{{ number_format(0,2) }}</td>
-        </tr>
-        <tr>
-            <td style="font-weight:bold;">TOTAL</td>
-            <td style="text-align:right; font-weight:bold;">{{ number_format($total*1.2,2) }}</td>
-        </tr>
-    </table>
+        @if($bon_de_commande->comments)
+        <div class="footer">
+            <p><strong>Commentaires:</strong></p>
+            <p>{{ $bon_de_commande->comments }}</p>
+        </div>
+        @endif
 
-    <div style="clear:both;"></div>
-
-    <div class="notes">
-        1. Veuillez envoyer deux copies de votre facture.<br>
-        2. Entrez cette commande conformément aux tarifs, aux conditions, à la méthode de livraison et aux spécifications répertoires ci-dessus.<br>
-        3. Veuillez nous informer immédiatement si vous n'êtes pas en mesure d'exécuter la commande telle que spécifiée.<br>
-        4. Adressez toutes les correspondances à :<br>
-        &nbsp;&nbsp;{{ $settings->company_contact ?? 'Nom société/adresse' }}
-    </div>
-
-    <div style="margin-top:30px;">
-        <small>Généré le {{ now()->format('d/m/Y H:i') }}</small>
+        <div class="footer">
+            <p>Généré le: {{ now()->format('d/m/Y à H:i') }}</p>
+        </div>
     </div>
 </body>
 </html>

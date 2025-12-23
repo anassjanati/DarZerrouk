@@ -4,6 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 class ActivityLog extends Model
 {
@@ -26,58 +28,64 @@ class ActivityLog extends Model
     ];
 
     /**
-     * Relationships
+     * User who performed the action.
      */
-    public function user()
+    public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
     /**
-     * Get the subject model
+     * Polymorphic subject of the activity.
      */
-    public function subject()
+    public function subject(): ?MorphTo
     {
         if ($this->model && $this->model_id) {
             return $this->morphTo('subject', 'model', 'model_id');
         }
+
         return null;
     }
 
     /**
-     * Scopes
+     * Scopes.
      */
-    public function scopeRecent($query, $days = 30)
+    public function scopeRecent($query, int $days = 30)
     {
         return $query->where('created_at', '>=', now()->subDays($days));
     }
 
-    public function scopeByUser($query, $userId)
+    public function scopeByUser($query, int $userId)
     {
         return $query->where('user_id', $userId);
     }
 
-    public function scopeByAction($query, $action)
+    public function scopeByAction($query, string $action)
     {
         return $query->where('action', $action);
     }
 
-    public function scopeByModel($query, $model)
+    public function scopeByModel($query, string $model)
     {
         return $query->where('model', $model);
     }
 
     /**
-     * Static helper to log activity
+     * Static helper to log activity.
      */
-    public static function log($action, $description, $model = null, $modelId = null, $properties = null)
-    {
+    public static function log(
+        string $action,
+        string $description,
+        ?string $model = null,
+        ?int $modelId = null,
+        $properties = null
+    ): self {
         return static::create([
-            'user_id' => auth()->id(),
-            'action' => $action,
-            'model' => $model,
-            'model_id' => $modelId,
-            'description' => $description,
+            'user_id'    => auth()->id(),
+            'action'     => $action,
+            'model'      => $model,
+            'model_id'   => $modelId,
+            'description'=> $description,
             'properties' => $properties,
             'ip_address' => request()->ip(),
             'user_agent' => request()->userAgent(),

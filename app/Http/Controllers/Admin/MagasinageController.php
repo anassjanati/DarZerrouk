@@ -12,28 +12,33 @@ use App\Models\Stock;
 
 class MagasinageController extends Controller
 {
-    public function index()
-    {
-        $books = Book::where('is_active', true)->orderBy('title')->get();
-        $zones = Zone::orderBy('name')->get();
-        $sousZones = SousZone::orderBy('name')->get();
-        $sousSousZones = SousSousZone::orderBy('name')->get();
+public function index(Request $request)
+{
+    $zones = Zone::magasinage()->active()->orderBy('code')->get();
 
-        // Prepare zoneStocks for table: [zone => [book stocks in this zone]]
-        $zoneStocks = [];
-        foreach ($zones as $zone) {
-            $stocks = Stock::with('book')
-                ->where('zone_id', $zone->id)
-                ->where('location_type', 'magasinage')
-                ->get();
-            $zoneStocks[] = [
-                'zone'  => $zone,
-                'books' => $stocks,
-            ];
-        }
+    $stocks = Stock::with(['book', 'zone', 'sousZone', 'sousSousZone'])
+        ->whereHas('zone', fn($q) => $q->where('type', 'magasinage'))
+        ->orderBy('zone_id')
+        ->orderBy('book_id')
+        ->get();
 
-        return view('admin.magasinage.index', compact('books', 'zones', 'sousZones', 'sousSousZones', 'zoneStocks'));
+    $totalUnits    = (int) $stocks->sum('quantity');
+    $totalTitles   = $stocks->groupBy('book_id')->count();
+    $lowReserve    = $stocks->filter(fn($s) =>
+        $s->book && $s->book->reorder_level && $s->quantity < $s->book->reorder_level
+    );
+    $lowReserveCnt = $lowReserve->groupBy('book_id')->count();
+
+    $data = compact('zones', 'stocks', 'totalUnits', 'totalTitles', 'lowReserveCnt');
+
+    if ($request->routeIs('manager.magasinage.index')) {
+        return view('manager.magasinage.index', $data);
     }
+
+    return view('admin.magasinage.index', $data);
+}
+
+
 
     // Stock add
     public function store(Request $request)
@@ -45,18 +50,22 @@ class MagasinageController extends Controller
             'sous_zone_id'     => 'nullable|exists:sous_zones,id',
             'sous_sous_zone_id'=> 'nullable|exists:sous_sous_zones,id',
         ]);
-        Stock::create([
+
+        // Either create a new stock line or increment existing one for same place
+        $stock = Stock::firstOrNew([
             'book_id'          => $request->book_id,
             'zone_id'          => $request->zone_id,
             'sous_zone_id'     => $request->sous_zone_id,
             'sous_sous_zone_id'=> $request->sous_sous_zone_id,
-            'quantity'         => $request->quantity,
-            'location_type'    => 'magasinage',
         ]);
+
+        $stock->quantity = ($stock->quantity ?? 0) + $request->quantity;
+        $stock->save();
+
         return back()->with('success', 'Stock ajouté.');
     }
 
-    // Stock transfer
+    // Stock transfer between zones (same book)
     public function transfer(Request $request)
     {
         $request->validate([
@@ -65,23 +74,24 @@ class MagasinageController extends Controller
             'to_zone_id'   => 'required|exists:zones,id|different:from_zone_id',
             'quantity'     => 'required|integer|min:1',
         ]);
+
         // Reduce stock from origin
-        $stock = Stock::where([
+        $fromStock = Stock::where([
             'book_id' => $request->book_id,
             'zone_id' => $request->from_zone_id,
-            'location_type' => 'magasinage'
         ])->first();
-        if (!$stock || $stock->quantity < $request->quantity) {
+
+        if (!$fromStock || $fromStock->quantity < $request->quantity) {
             return back()->with('error', 'Stock insuffisant.');
         }
-        $stock->quantity -= $request->quantity;
-        $stock->save();
+
+        $fromStock->quantity -= $request->quantity;
+        $fromStock->save();
 
         // Add stock to destination (or create new entry)
         $toStock = Stock::firstOrNew([
             'book_id' => $request->book_id,
             'zone_id' => $request->to_zone_id,
-            'location_type' => 'magasinage'
         ]);
         $toStock->quantity = ($toStock->quantity ?? 0) + $request->quantity;
         $toStock->save();

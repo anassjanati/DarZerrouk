@@ -32,29 +32,29 @@ class Sale extends Model
     ];
 
     protected $casts = [
-        'sale_date' => 'datetime',
-        'subtotal' => 'decimal:2',
-        'discount_value' => 'decimal:2',
-        'discount_amount' => 'decimal:2',
-        'tax_percentage' => 'decimal:2',
-        'tax_amount' => 'decimal:2',
-        'total_amount' => 'decimal:2',
-        'paid_amount' => 'decimal:2',
-        'change_amount' => 'decimal:2',
-        'points_earned' => 'integer',
-        'points_redeemed' => 'integer',
+        'sale_date'        => 'datetime',
+        'subtotal'         => 'decimal:2',
+        'discount_value'   => 'decimal:2',
+        'discount_amount'  => 'decimal:2',
+        'tax_percentage'   => 'decimal:2',
+        'tax_amount'       => 'decimal:2',
+        'total_amount'     => 'decimal:2',
+        'paid_amount'      => 'decimal:2',
+        'change_amount'    => 'decimal:2',
+        'points_earned'    => 'integer',
+        'points_redeemed'  => 'integer',
     ];
 
     /**
-     * Get the customer
+     * Client (colonne customer_id).
      */
-    public function customer(): BelongsTo
+    public function client(): BelongsTo
     {
-        return $this->belongsTo(Customer::class);
+        return $this->belongsTo(Client::class, 'customer_id');
     }
 
     /**
-     * Get the user (cashier)
+     * Utilisateur (caissier).
      */
     public function user(): BelongsTo
     {
@@ -62,15 +62,15 @@ class Sale extends Model
     }
 
     /**
-     * Get all sale items
+     * Lignes de vente (détail des articles).
      */
-    public function saleItems(): HasMany
+    public function items(): HasMany
     {
         return $this->hasMany(SaleItem::class);
     }
 
     /**
-     * Get all payments
+     * Paiements liés à la vente.
      */
     public function payments(): HasMany
     {
@@ -78,7 +78,7 @@ class Sale extends Model
     }
 
     /**
-     * Get loyalty points transactions
+     * Transactions de points de fidélité.
      */
     public function loyaltyPoints(): HasMany
     {
@@ -86,19 +86,22 @@ class Sale extends Model
     }
 
     /**
-     * Generate unique invoice number
+     * Génère un numéro de facture unique du type INV-YYYYMMDD-001.
      */
     public static function generateInvoiceNumber(): string
     {
-        $prefix = 'INV';
-        $date = date('Ymd');
+        $prefix   = 'INV';
+        $date     = date('Ymd');
         $lastSale = self::whereDate('created_at', today())->latest('id')->first();
-        $number = $lastSale ? (int)substr($lastSale->invoice_number, -3) + 1 : 1;
+        $number   = $lastSale
+            ? (int) substr($lastSale->invoice_number, -3) + 1
+            : 1;
+
         return $prefix . '-' . $date . '-' . str_pad($number, 3, '0', STR_PAD_LEFT);
     }
 
     /**
-     * Scope to get today's sales
+     * Scope : ventes du jour.
      */
     public function scopeToday($query)
     {
@@ -106,7 +109,7 @@ class Sale extends Model
     }
 
     /**
-     * Scope to get completed sales
+     * Scope : ventes complétées.
      */
     public function scopeCompleted($query)
     {

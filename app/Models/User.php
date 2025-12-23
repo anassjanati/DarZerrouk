@@ -30,9 +30,9 @@ class User extends Authenticatable
 
     protected $casts = [
         'email_verified_at' => 'datetime',
-        'last_login_at' => 'datetime',
-        'is_active' => 'boolean',
-        'password' => 'hashed',
+        'last_login_at'     => 'datetime',
+        'is_active'         => 'boolean',
+        'password'          => 'hashed',
     ];
 
     /**
@@ -100,11 +100,31 @@ class User extends Authenticatable
     }
 
     /**
+     * Check if user has any role in list
+     */
+    public function hasAnyRole(array $roles): bool
+    {
+        if (!$this->role) {
+            return false;
+        }
+
+        return in_array($this->role->name, $roles, true);
+    }
+
+    /**
      * Check if user is admin
      */
     public function isAdmin(): bool
     {
         return $this->hasRole('admin');
+    }
+
+    /**
+     * Check if user is superviseur
+     */
+    public function isSuperviseur(): bool
+    {
+        return $this->hasRole('superviseur');
     }
 
     /**
@@ -122,4 +142,33 @@ class User extends Authenticatable
     {
         return $this->hasRole('cashier');
     }
+
+    /**
+     * Check module permissions based on the user's role permissions
+     * expects Role hasMany RolePermission with fields: module, can_view, can_create, can_edit, can_delete
+     */
+    public function canModule(string $module, string $action): bool
+{
+    if (! $this->role) {
+        return false;
+    }
+
+    // Ensure permissions are loaded from DB
+    $this->role->loadMissing('permissions');
+
+    $perm = $this->role->permissions
+        ->firstWhere('module', $module);
+
+    if (! $perm) {
+        return false;
+    }
+
+    return match ($action) {
+        'view'   => (bool) $perm->can_view,
+        'create' => (bool) $perm->can_create,
+        'edit'   => (bool) $perm->can_edit,
+        'delete' => (bool) $perm->can_delete,
+        default  => false,
+    };
+}
 }

@@ -166,10 +166,10 @@
                     </span>
                 </td>
                 <td class="px-6 py-4 text-sm font-medium text-gray-900">
-                    {{ number_format($book->price_1, 2) }} DH
+                    {{ number_format($book->retail_price) }} DH
                 </td>
                 <td class="px-6 py-4">
-                    <span class="text-lg font-bold {{ $book->isOutOfStock() ? 'text-red-600' : 'text-orange-600' }}">
+                    <span class="text-lg font-bold {{ $book->is_out_of_stock ? 'text-red-600' : 'text-orange-600' }}">
                         {{ $book->stock_quantity }}
                     </span>
                 </td>
@@ -177,10 +177,10 @@
                     {{ $book->min_stock_level ?? $book->reorder_level ?? 5 }}
                 </td>
                 <td class="px-6 py-4">
-                    @if($book->isOutOfStock())
-                        <span class="px-3 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800 border border-red-300">
-                            ⚠️ RUPTURE
-                        </span>
+                    @if($book->is_out_of_stock)
+            <span class="px-3 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800 border border-red-300">
+                ⚠️ RUPTURE
+            </span>
                     @else
                         <span class="px-3 py-1 text-xs font-semibold rounded-full bg-orange-100 text-orange-800 border border-orange-300">
                             ⚡ STOCK FAIBLE

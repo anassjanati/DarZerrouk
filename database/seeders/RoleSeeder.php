@@ -18,6 +18,13 @@ class RoleSeeder extends Seeder
                 'updated_at' => now(),
             ],
             [
+                'name' => 'superviseur',
+                'display_name' => 'Superviseur',
+                'description' => 'Supervise operations, manage books and stock',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
                 'name' => 'manager',
                 'display_name' => 'Manager',
                 'description' => 'Manage operations and view reports',
